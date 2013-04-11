@@ -44,29 +44,29 @@ main( void )
 	IFR = 0x0000;
 	InitPieVectTable();
 
-	/*TEST COM PORTS
+	//TEST COM PORTS
 	// Initialize COM device 0 with 9600 baud, 8 data bits and no parity.
-	if( xMBPortSerialInit( 0, 9600, 8, MB_PAR_NONE ) == FALSE )
+	/*if( xMBPortSerialInit( 0, 9600, 8, MB_PAR_NONE ) == FALSE )
 	{
 	  fprintf(stderr, "error: com init failed");
 	}
 	else
 	{
 	  // Enable the transmitter.
-	  vMBPortSerialEnable( 1, 1);
+	  vMBPortSerialEnable( 0, 1);
 	  // Now block. Any character received should cause an interrupt now.
 	  for( ;; );
 	}*/
 
-	/* TEST TIMERS
-	xMBPortTimersInit( 20 );
+	// TEST TIMERS
+	/*xMBPortTimersInit( 20 );
 	vMBPortTimersEnable( );
-	for( ;; ); */
+	for( ;; );*/
 
 	eMBErrorCode    eStatus;
 
     //eStatus = eMBInit( MB_RTU, 0x0A, 0, 38400, MB_PAR_EVEN );
-    eStatus = eMBInit( MB_RTU, 0x0A, 0, 9600, MB_PAR_NONE );
+    eStatus = eMBInit( MB_RTU, 0x01, 0, 9600, MB_PAR_NONE );
 
     // Enable the Modbus Protocol Stack.
     eStatus = eMBEnable();

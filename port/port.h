@@ -30,8 +30,8 @@
 #define PR_BEGIN_EXTERN_C           extern "C" {
 #define	PR_END_EXTERN_C             }
 
-#define ENTER_CRITICAL_SECTION( )  EALLOW
-#define EXIT_CRITICAL_SECTION( )   EDIS
+#define ENTER_CRITICAL_SECTION( )  DINT
+#define EXIT_CRITICAL_SECTION( )   EINT
 
 typedef int BOOL;
 
@@ -50,6 +50,14 @@ typedef int32_t LONG;
 
 #ifndef FALSE
 #define FALSE           0
+#endif
+
+#ifndef true
+#define true            1
+#endif
+
+#ifndef false
+#define false           0
 #endif
 
 #endif

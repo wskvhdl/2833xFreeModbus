@@ -43,13 +43,13 @@ xMBPortTimersInit( USHORT usTim1Timerout50us )
 	InitCpuTimers();
 
 	#if (CPU_FRQ_150MHZ)
-	// Configure CPU-Timer 0, 1, and 2 to interrupt every second:
+	// Configure CPU-Timer 0 to interrupt every second:
 	// 150MHz CPU Freq, 1 second Period (in uSeconds)
 	ConfigCpuTimer(&CpuTimer0, 150, usTim1Timerout50us);
 	#endif
 
 	#if (CPU_FRQ_100MHZ)
-	// Configure CPU-Timer 0, 1, and 2 to interrupt every second:
+	// Configure CPU-Timer 0 to interrupt every second:
 	// 100MHz CPU Freq, 1 second Period (in uSeconds)
 	ConfigCpuTimer(&CpuTimer0, 100, usTim1Timerout50us);
 	#endif
@@ -57,12 +57,13 @@ xMBPortTimersInit( USHORT usTim1Timerout50us )
 	// To ensure precise timing, use write-only instructions to write to the entire register. Therefore, if any
 	// of the configuration bits are changed in ConfigCpuTimer and InitCpuTimers (in DSP2833x_CpuTimers.h), the
 	// below settings must also be updated.
-	CpuTimer0Regs.TCR.all = 0x4009;	// Use write-only instruction to set TSS bit = 1
+	//CpuTimer0Regs.TCR.all = 0x4009;	// Use write-only instruction to set TSS bit = 1
+	CpuTimer0Regs.TCR.all = 0xC011;
 
 	// Enable CPU int1 which is connected to CPU-Timer 0
 	IER |= M_INT1;
-	IER |= M_INT13;
-	IER |= M_INT14;
+	//IER |= M_INT13;
+	//IER |= M_INT14;
 
 	// Enable TINT0 in the PIE: Group 1 interrupt 7
 	PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
@@ -78,20 +79,21 @@ xMBPortTimersInit( USHORT usTim1Timerout50us )
 void vMBPortTimersEnable(  )
 {
     /* Enable the timer with the timeout passed to xMBPortTimersInit( ) */
-	//CpuTimer0Regs.TIM.all = 0x0;
-	CpuTimer0Regs.TCR.all = 0x4001;
-	CpuTimer0Regs.TCR.bit.TIF = 1;
-	CpuTimer0Regs.TCR.bit.TIE = 1;
-	CpuTimer0Regs.TCR.bit.TSS = 0;
+	CpuTimer0Regs.TIM.all = 0x0;	//Reset counter
+
+	CpuTimer0Regs.TCR.all = 0xC001; //TIF = 1; TIE = 1; TSS = 0
+	//CpuTimer0Regs.TCR.bit.TIF = 1;
+	//CpuTimer0Regs.TCR.bit.TIE = 1;
+	//CpuTimer0Regs.TCR.bit.TSS = 0;
 }
 
 void vMBPortTimersDisable(  )
 {
     /* Disable any pending timers. */
-	CpuTimer0Regs.TCR.all = 0x4008;
-	CpuTimer0Regs.TCR.bit.TIF = 0;
-	CpuTimer0Regs.TCR.bit.TIE = 0;
-	CpuTimer0Regs.TCR.bit.TSS = 1;
+	CpuTimer0Regs.TCR.all = 0x0011; // TSS = 1; TIF = 0; TIE = 0
+	//CpuTimer0Regs.TCR.bit.TIF = 0;
+	//CpuTimer0Regs.TCR.bit.TIE = 0;
+	//CpuTimer0Regs.TCR.bit.TSS = 1;
 }
 
 /* Create an ISR which is called whenever the timer has expired. This function
@@ -103,5 +105,7 @@ interrupt void prvvTIMERExpiredISR( void )
 	CpuTimer0.InterruptCount++;
     ( void )pxMBPortCBTimerExpired(  );
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+
+    CpuTimer0Regs.TCR.bit.TIF = 1;
 }
 

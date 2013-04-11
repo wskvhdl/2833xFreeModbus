@@ -97,7 +97,7 @@
 #define MB_FUNC_OTHER_REP_SLAVEID_BUF           ( 32 )
 
 /*! \brief If the <em>Report Slave ID</em> function should be enabled. */
-#define MB_FUNC_OTHER_REP_SLAVEID_ENABLED       (  1 )
+#define MB_FUNC_OTHER_REP_SLAVEID_ENABLED       ( 0 )
 
 /*! \brief If the <em>Read Input Registers</em> function should be enabled. */
 #define MB_FUNC_READ_INPUT_ENABLED              (  1 )

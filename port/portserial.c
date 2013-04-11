@@ -35,40 +35,26 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 	/* If xRXEnable enable serial receive interrupts. If xTxENable enable
 	 * transmitter empty interrupts.
 	 */
-	ENTER_CRITICAL_SECTION(  );
-	//SciaRegs.SCICTL1.bit.SWRESET = 0;
+
 	if(xRxEnable){
-		SciaRegs.SCICTL1.bit.RXENA = 1;
+		//SciaRegs.SCICTL1.bit.RXENA = 1;
 		SciaRegs.SCICTL2.bit.RXBKINTENA =1;
-		//SciaRegs.SCIFFRX.bit.RXFIFORESET=1;
 	}
 	else {
-		SciaRegs.SCICTL1.bit.RXENA = 0;
+		//SciaRegs.SCICTL1.bit.RXENA = 0;
 		SciaRegs.SCICTL2.bit.RXBKINTENA =0;
-		//SciaRegs.SCIFFRX.bit.RXFIFORESET=0;
 	}
 
 	if(xTxEnable){
-		SciaRegs.SCICTL1.bit.TXENA = 1;
+		//SciaRegs.SCICTL1.bit.TXENA = 1;
 		SciaRegs.SCICTL2.bit.TXINTENA =1;
-
-		//SciaRegs.SCIFFTX.bit.TXFIFOXRESET=1;
-		//SciaRegs.SCIFFTX.bit.TXFFINTCLR=1;
-		//SciaRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
-		//SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
-		//PieCtrlRegs.PIEACK.all|=0x100;
+		SciaRegs.SCICTL1.all =0x0003;
+		SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
 	}
 	else{
-		SciaRegs.SCICTL1.bit.TXENA = 0;
+		//SciaRegs.SCICTL1.bit.TXENA = 0;
 		SciaRegs.SCICTL2.bit.TXINTENA =0;
-		//SciaRegs.SCIFFTX.bit.TXFIFOXRESET=0;
-		//SciaRegs.SCIFFTX.bit.TXFFINTCLR=0;
-		//SciaRegs.SCIFFRX.bit.RXFFOVRCLR=0;   // Clear Overflow flag
-		//SciaRegs.SCIFFRX.bit.RXFFINTCLR=0;   // Clear Interrupt flag
 	}
-	//SciaRegs.SCICTL1.bit.SWRESET = 1;
-
-	EXIT_CRITICAL_SECTION(  );
 	EINT;
 }
 
@@ -148,6 +134,7 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBPar
 	PieCtrlRegs.PIEIER9.bit.INTx2=1;     // PIE Group 9, INT2
 	IER = 0x100;	// Enable CPU INT
 	EINT;
+	vMBPortSerialEnable( FALSE, FALSE );
 
 	return TRUE;
 }
@@ -190,6 +177,7 @@ interrupt void prvvUARTTxReadyISR( void )
 
 	//SciaRegs.SCICTL1.bit.SWRESET = 0;
 	//SciaRegs.SCICTL1.bit.SWRESET = 1;
+	//SciaRegs.SCICTL2.bit.TXINTENA =0;
 	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
 	pxMBFrameCBTransmitterEmpty(  );
 }
@@ -211,9 +199,7 @@ interrupt void prvvUARTRxISR( void )
 	SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
 	SciaRegs.SCIFFRX.bit.RXFIFORESET=0;
 	SciaRegs.SCIFFRX.bit.RXFIFORESET=1;*/
-
-	pxMBFrameCBByteReceived(  );
-	//SciaRegs.SCICTL1.bit.SWRESET = 0;
-	//SciaRegs.SCICTL1.bit.SWRESET = 1;
+	//SciaRegs.SCICTL2.bit.RXBKINTENA =0;
 	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
+	pxMBFrameCBByteReceived(  );
 }
