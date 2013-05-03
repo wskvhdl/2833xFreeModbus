@@ -24,6 +24,7 @@
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
 #include "mbport.h"
+#include "debug.h"
 
 /* ----------------------- static functions ---------------------------------*/
 interrupt void prvvUARTTxReadyISR( void );
@@ -35,7 +36,7 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 	/* If xRXEnable enable serial receive interrupts. If xTxENable enable
 	 * transmitter empty interrupts.
 	 */
-
+	ENTER_CRITICAL_SECTION(  );
 	if(xRxEnable){
 		//SciaRegs.SCICTL1.bit.RXENA = 1;
 		SciaRegs.SCICTL2.bit.RXBKINTENA =1;
@@ -48,34 +49,32 @@ void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 	if(xTxEnable){
 		//SciaRegs.SCICTL1.bit.TXENA = 1;
 		SciaRegs.SCICTL2.bit.TXINTENA =1;
-		SciaRegs.SCICTL1.all =0x0003;
-		SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
+		SciaRegs.SCICTL2.bit.TXEMPTY = 0;
+		SciaRegs.SCICTL1.bit.SWRESET = 0;
+		SciaRegs.SCICTL1.bit.SWRESET = 1;
+		//IFR = 0x0000;
 	}
 	else{
 		//SciaRegs.SCICTL1.bit.TXENA = 0;
 		SciaRegs.SCICTL2.bit.TXINTENA =0;
 	}
-	EINT;
+	EXIT_CRITICAL_SECTION(  );
 }
 
 BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
 {
 	(void)ucPORT;
 
-	EALLOW;
+	ENTER_CRITICAL_SECTION(  );
 	PieVectTable.SCIRXINTA = &prvvUARTRxISR;
 	PieVectTable.SCITXINTA = &prvvUARTTxReadyISR;
-	EDIS;
-
-	// Note: Clocks were turned on to the SCIA peripheral
-	// in the InitSysCtrl() function
 
 	SciaRegs.SCICCR.all =0x0007;	// 1 stop bit,  No loopback
 									// No parity,8 char bits,
 									// async mode, idle-line protocol
 	SciaRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
 								  // Disable RX ERR, SLEEP, TXWAKE
-
+	SciaRegs.SCIFFTX.bit.SCIFFENA = 0;
 	//UCDATABITS SETTINGS -------------------------------------------
 	switch(ucDataBits){
 		case 8:
@@ -117,25 +116,15 @@ BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBPar
 
 	#endif
 
-	//Disable FIFO
-	//SciaRegs.SCIFFTX.all=0x0000;
-	//SciaRegs.SCIFFRX.all=0x0000;
-	//SciaRegs.SCIFFCT.all=0x00;
-	//----
-
-	SciaRegs.SCICTL2.bit.TXINTENA =1;
-	SciaRegs.SCICTL2.bit.RXBKINTENA =1;
-
-	//SciaRegs.SCICCR.bit.LOOPBKENA =0;
-	SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
-
 	PieCtrlRegs.PIECTRL.bit.ENPIE = 1;   // Enable the PIE block
 	PieCtrlRegs.PIEIER9.bit.INTx1=1;     // PIE Group 9, int1
 	PieCtrlRegs.PIEIER9.bit.INTx2=1;     // PIE Group 9, INT2
-	IER = 0x100;	// Enable CPU INT
-	EINT;
-	vMBPortSerialEnable( FALSE, FALSE );
 
+	//IER = 0x100;	// Enable CPU INT
+	IER |= M_INT9;	// Enable CPU INT
+	SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
+	vMBPortSerialEnable( FALSE, FALSE );
+	EXIT_CRITICAL_SECTION(  );
 	return TRUE;
 }
 
@@ -145,7 +134,6 @@ BOOL xMBPortSerialPutByte( CHAR ucByte )
 	 * by the protocol stack if pxMBFrameCBTransmitterEmpty( ) has been
 	 * called. */
 
-	//while (SciaRegs.SCIFFTX.bit.TXFFST != 0) {}
 	SciaRegs.SCITXBUF=ucByte;
 	return TRUE;
 }
@@ -155,7 +143,6 @@ BOOL xMBPortSerialGetByte( CHAR * pucByte )
 	/* Return the byte in the UARTs receive buffer. This function is called
 	 * by the protocol stack after pxMBFrameCBByteReceived( ) has been called.
 	 */
-	//while(SciaRegs.SCIFFRX.bit.RXFFST !=1) { }
 	*pucByte = SciaRegs.SCIRXBUF.bit.RXDT;
 	return TRUE;
 }
@@ -168,18 +155,16 @@ BOOL xMBPortSerialGetByte( CHAR * pucByte )
  */
 interrupt void prvvUARTTxReadyISR( void )
 {
-	/* FIFO Configs
-	//SciaRegs.SCIFFTX.bit.TXFFINTCLR=1;	// Clear SCI Interrupt flag
-
-	//SciaRegs.SCIFFTX.bit.TXFIFOXRESET=0;
-	//SciaRegs.SCIFFTX.bit.TXFIFOXRESET=1;
-	*/
-
-	//SciaRegs.SCICTL1.bit.SWRESET = 0;
-	//SciaRegs.SCICTL1.bit.SWRESET = 1;
-	//SciaRegs.SCICTL2.bit.TXINTENA =0;
+	static unsigned int uiCnt = 0;
 	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
+	#if (TEST == TEST_TX)
+	if(uiCnt++ < 10)
+		xMBPortSerialPutByte('a');
+	else
+		vMBPortSerialEnable(false,false);
+	#elif (TEST == NO_TEST)
 	pxMBFrameCBTransmitterEmpty(  );
+	#endif
 }
 
 /* Create an interrupt handler for the receive interrupt for your target
@@ -189,17 +174,11 @@ interrupt void prvvUARTTxReadyISR( void )
  */
 interrupt void prvvUARTRxISR( void )
 {
-	/* TESTS Configs
-	CHAR send;
-	xMBPortSerialGetByte( &send);
-	xMBPortSerialPutByte( send );*/
-
-	/*FIFO Configs
-	SciaRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
-	SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
-	SciaRegs.SCIFFRX.bit.RXFIFORESET=0;
-	SciaRegs.SCIFFRX.bit.RXFIFORESET=1;*/
-	//SciaRegs.SCICTL2.bit.RXBKINTENA =0;
 	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
+	#if (TEST == TEST_RX)
+	char cByte;
+	(void) xMBPortSerialGetByte(&cByte);
+	#else
 	pxMBFrameCBByteReceived(  );
+	#endif
 }

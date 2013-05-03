@@ -18,8 +18,8 @@
  *
  * File: $Id: demo.c,v 1.1 2006/08/22 21:35:13 wolti Exp $
  */
-
 /* ----------------------- Modbus includes ----------------------------------*/
+#include "debug.h"
 #include "mb.h"
 #include "mbport.h"
 #include "stdio.h"
@@ -44,25 +44,31 @@ main( void )
 	IFR = 0x0000;
 	InitPieVectTable();
 
-	//TEST COM PORTS
+	#if (TEST == TEST_RX || TEST == TEST_TX) //TEST COM PORTS
 	// Initialize COM device 0 with 9600 baud, 8 data bits and no parity.
-	/*if( xMBPortSerialInit( 0, 9600, 8, MB_PAR_NONE ) == FALSE )
+	if( xMBPortSerialInit( 0, 9600, 8, MB_PAR_NONE ) == FALSE )
 	{
 	  fprintf(stderr, "error: com init failed");
 	}
 	else
 	{
 	  // Enable the transmitter.
-	  vMBPortSerialEnable( 0, 1);
+		#if(TEST == TEST_RX)
+		vMBPortSerialEnable( TRUE, FALSE);
+		#elif (TEST == TEST_TX)
+		vMBPortSerialEnable( FALSE, TRUE);
+		xMBPortSerialPutByte('a');
+		#endif
 	  // Now block. Any character received should cause an interrupt now.
 	  for( ;; );
-	}*/
-
+	}
+	#elif (TEST == TEST_TIMER)
 	// TEST TIMERS
-	/*xMBPortTimersInit( 20 );
+	xMBPortTimersInit( 20 );
 	vMBPortTimersEnable( );
-	for( ;; );*/
+	for( ;; );
 
+	#elif (TEST == NO_TEST)
 	eMBErrorCode    eStatus;
 
     //eStatus = eMBInit( MB_RTU, 0x0A, 0, 38400, MB_PAR_EVEN );
@@ -78,6 +84,7 @@ main( void )
         // Here we simply count the number of poll cycles.
         usRegInputBuf[0]++;
     }
+	#endif
 }
 
 eMBErrorCode

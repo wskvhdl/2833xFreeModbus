@@ -82,18 +82,19 @@ void vMBPortTimersEnable(  )
 	CpuTimer0Regs.TIM.all = 0x0;	//Reset counter
 
 	CpuTimer0Regs.TCR.all = 0xC001; //TIF = 1; TIE = 1; TSS = 0
-	//CpuTimer0Regs.TCR.bit.TIF = 1;
-	//CpuTimer0Regs.TCR.bit.TIE = 1;
-	//CpuTimer0Regs.TCR.bit.TSS = 0;
+	CpuTimer0Regs.TCR.bit.TIF = 1;
+	CpuTimer0Regs.TCR.bit.TIE = 1;
+	CpuTimer0Regs.TCR.bit.TSS = 0;
 }
 
 void vMBPortTimersDisable(  )
 {
     /* Disable any pending timers. */
 	CpuTimer0Regs.TCR.all = 0x0011; // TSS = 1; TIF = 0; TIE = 0
-	//CpuTimer0Regs.TCR.bit.TIF = 0;
-	//CpuTimer0Regs.TCR.bit.TIE = 0;
-	//CpuTimer0Regs.TCR.bit.TSS = 1;
+
+	CpuTimer0Regs.TCR.bit.TIF = 0;
+	CpuTimer0Regs.TCR.bit.TIE = 0;
+	CpuTimer0Regs.TCR.bit.TSS = 1;
 }
 
 /* Create an ISR which is called whenever the timer has expired. This function
@@ -103,9 +104,9 @@ void vMBPortTimersDisable(  )
 interrupt void prvvTIMERExpiredISR( void )
 {
 	CpuTimer0.InterruptCount++;
-    ( void )pxMBPortCBTimerExpired(  );
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 
     CpuTimer0Regs.TCR.bit.TIF = 1;
+    ( void )pxMBPortCBTimerExpired(  );
 }
 
