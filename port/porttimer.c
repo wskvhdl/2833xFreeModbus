@@ -92,8 +92,8 @@ void vMBPortTimersDisable(  )
     /* Disable any pending timers. */
 	CpuTimer0Regs.TCR.all = 0x0011; // TSS = 1; TIF = 0; TIE = 0
 
-	CpuTimer0Regs.TCR.bit.TIF = 0;
-	CpuTimer0Regs.TCR.bit.TIE = 0;
+	CpuTimer0Regs.TCR.bit.TIF = 1;
+	CpuTimer0Regs.TCR.bit.TIE = 1;
 	CpuTimer0Regs.TCR.bit.TSS = 1;
 }
 
@@ -106,7 +106,7 @@ interrupt void prvvTIMERExpiredISR( void )
 	CpuTimer0.InterruptCount++;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 
-    CpuTimer0Regs.TCR.bit.TIF = 1;
+    //CpuTimer0Regs.TCR.bit.TIF = 1;
     ( void )pxMBPortCBTimerExpired(  );
 }
 

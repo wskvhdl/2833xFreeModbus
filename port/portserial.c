@@ -156,7 +156,6 @@ BOOL xMBPortSerialGetByte( CHAR * pucByte )
 interrupt void prvvUARTTxReadyISR( void )
 {
 	static unsigned int uiCnt = 0;
-	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
 	#if (TEST == TEST_TX)
 	if(uiCnt++ < 10)
 		xMBPortSerialPutByte('a');
@@ -165,6 +164,7 @@ interrupt void prvvUARTTxReadyISR( void )
 	#elif (TEST == NO_TEST)
 	pxMBFrameCBTransmitterEmpty(  );
 	#endif
+	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
 }
 
 /* Create an interrupt handler for the receive interrupt for your target
@@ -174,11 +174,11 @@ interrupt void prvvUARTTxReadyISR( void )
  */
 interrupt void prvvUARTRxISR( void )
 {
-	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
 	#if (TEST == TEST_RX)
 	char cByte;
 	(void) xMBPortSerialGetByte(&cByte);
 	#else
 	pxMBFrameCBByteReceived(  );
 	#endif
+	PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
 }
